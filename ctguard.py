@@ -49,9 +49,11 @@ for domain in sys.argv[1:]:
 
 
 	#check to see differences
+	issuers = set()
+	domains = set()
 	for digest in newobject.keys():
-		if digest not in oldobject:
-			obj = newobject[digest]
+		obj = newobject[digest]
+		if digest not in oldobject: #found a new cert
 			#now we need to report a new cert
 			print("New certificate found for domain %s:" % domain)
 			print(digest)
@@ -59,7 +61,14 @@ for domain in sys.argv[1:]:
 			print("\tIssuer: %s" % obj["issuer"] )
 			print("\tNot before: %s" % obj["not_before"])
 			print("\tNot After: %s" % obj["not_after"])
-			print("")
+			print("\tNovel domains: %s" % ", ".join(list(set(obj["dns_names"]) - domains)) )
+			print("\tNovel Issuer: %s" % ["No", "Yes"][int(obj["issuer"] not in issuers)] )
+
+			#print("\tNovel issuer domains: %s")
+
+		#this needs to be done for statistics(to tack novel usage of domains and issuers per query / domain)
+		issuers.add(obj["issuer"])
+		domains.union(set(obj["dns_names"]))
 
 	#update
 	fullmap[domain] = newobject
