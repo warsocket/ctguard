@@ -21,14 +21,24 @@ import os
 import json
 import sys
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+
 file = os.path.join(os.path.expanduser("~"), ".ctguard.json")
 
 def fetch_domain(domain):
-	json = requests.get("https://certspotter.com/api/v0/certs?domain=%s" % domain).json()
+	#json = requests.get("https://certspotter.com/api/v0/certs?domain=%s" % domain).json()
+	json = requests.get("https://certspotter.com/api/v1/issuances?expand=dns_names&expand=cert&domain=%s" % domain).json()
 	m = {}
 	for item in json:
-		m[item["sha256"]] = item
+		digest = item["cert"]["sha256"]
+		m[digest] = item
+		#m[digest]
 
+		#mapping values extracted form certificate within
+		pem_data = "-----BEGIN CERTIFICATE-----\n" + m[digest]["cert"]["data"] + "\n-----END CERTIFICATE-----" 
+		cert = x509.load_pem_x509_certificate(pem_data.encode(),default_backend())
+		m[digest]["issuer"] = cert.issuer.rfc4514_string()
 	return m
 
 
@@ -42,7 +52,7 @@ else:
 
 for domain in sys.argv[1:]:
 	newobject = fetch_domain(domain)
-	
+
 	try:
 		oldobject = fullmap[domain]
 	except KeyError:
