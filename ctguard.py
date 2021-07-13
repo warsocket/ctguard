@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 
-#CTguard
-#Copyright (C) 2017 Bram Staps
-#
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU Affero General Public License as
-#published by the Free Software Foundation, either version 3 of the
-#License, or (at your option) any later version.
-#
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU Affero General Public License for more details.
-#
-#You should have received a copy of the GNU Affero General Public License
-#along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# CTguard
+# Copyright (C) 2017  Bram Staps
+
+# This file is part of CTguard.
+# CTguard is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# CTguard is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with CTguard. If not, see <http://www.gnu.org/licenses/>.
 
 import requests
 import os
@@ -60,9 +59,11 @@ for domain in sys.argv[1:]:
 
 
 	#check to see differences
+	issuers = set()
+	domains = set()
 	for digest in newobject.keys():
-		if digest not in oldobject:
-			obj = newobject[digest]
+		obj = newobject[digest]
+		if digest not in oldobject: #found a new cert
 			#now we need to report a new cert
 			print("New certificate found for domain %s:" % domain)
 			print(digest)
@@ -70,7 +71,14 @@ for domain in sys.argv[1:]:
 			print("\tIssuer: %s" % obj["issuer"] )
 			print("\tNot before: %s" % obj["not_before"])
 			print("\tNot After: %s" % obj["not_after"])
-			print("")
+			print("\tNovel domains: %s" % ", ".join(list(set(obj["dns_names"]) - domains)) )
+			print("\tNovel Issuer: %s" % ["No", "Yes"][int(obj["issuer"] not in issuers)] )
+
+			#print("\tNovel issuer domains: %s")
+
+		#this needs to be done for statistics(to tack novel usage of domains and issuers per query / domain)
+		issuers.add(obj["issuer"])
+		domains.union(set(obj["dns_names"]))
 
 	#update
 	fullmap[domain] = newobject
